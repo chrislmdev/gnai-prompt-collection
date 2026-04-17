@@ -1,0 +1,1 @@
+# gnai-prompt-collection
