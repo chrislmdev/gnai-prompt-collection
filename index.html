@@ -9,6 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <style>
+    /* Default (before JS): dark. After JS, html[data-theme] wins — avoids :root vs [data-theme] tie bugs */
     :root {
       --bg: #0c0f14;
       --bg-elevated: #12161e;
@@ -24,9 +25,24 @@
       --shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
       --font: "DM Sans", system-ui, sans-serif;
       --mono: "JetBrains Mono", ui-monospace, monospace;
+      color-scheme: dark;
     }
 
-    [data-theme="light"] {
+    html[data-theme="dark"] {
+      --bg: #0c0f14;
+      --bg-elevated: #12161e;
+      --bg-card: #161b24;
+      --border: rgba(255, 255, 255, 0.08);
+      --text: #e8eaef;
+      --text-muted: #8b93a7;
+      --accent: #5b8cff;
+      --accent-soft: rgba(91, 140, 255, 0.15);
+      --success: #3dd68c;
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+      color-scheme: dark;
+    }
+
+    html[data-theme="light"] {
       --bg: #f4f6fa;
       --bg-elevated: #ffffff;
       --bg-card: #ffffff;
@@ -36,6 +52,7 @@
       --accent: #2563eb;
       --accent-soft: rgba(37, 99, 235, 0.1);
       --shadow: 0 8px 32px rgba(15, 23, 42, 0.08);
+      color-scheme: light;
     }
 
     *, *::before, *::after { box-sizing: border-box; }
@@ -209,6 +226,8 @@
       display: flex;
       align-items: center;
       gap: 0.5rem;
+      position: relative;
+      z-index: 2;
     }
 
     .btn-icon {
@@ -222,8 +241,14 @@
       display: grid;
       place-items: center;
       transition: border-color 0.15s, background 0.15s;
+      flex-shrink: 0;
+      -webkit-tap-highlight-color: transparent;
     }
     .btn-icon:hover { border-color: var(--accent); }
+    .btn-icon span {
+      pointer-events: none;
+      line-height: 1;
+    }
 
     .count-pill {
       font-size: 0.8rem;
@@ -235,12 +260,21 @@
     .content {
       padding: 1.25rem 1.5rem 2.5rem;
       flex: 1;
+      min-height: 0;
     }
 
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
       gap: 1rem;
+    }
+
+    .grid-placeholder {
+      grid-column: 1 / -1;
+      margin: 0;
+      padding: 1rem;
+      color: var(--text-muted);
+      font-size: 0.9rem;
     }
 
     .card {
@@ -501,7 +535,9 @@
       </header>
 
       <div class="content">
-        <div class="grid" id="card-grid"></div>
+        <div class="grid" id="card-grid">
+          <p class="grid-placeholder" id="grid-placeholder">Loading blueprints…</p>
+        </div>
       </div>
     </div>
   </div>
@@ -938,6 +974,9 @@ Output: templates and concise examples; avoid buzzword stacks without purpose.`,
     }
 
     function renderCards() {
+      if (!grid) return;
+      const ph = document.getElementById("grid-placeholder");
+      if (ph) ph.remove();
       grid.innerHTML = "";
       let visible = 0;
       for (const a of AGENTS) {
@@ -1013,6 +1052,7 @@ Output: templates and concise examples; avoid buzzword stacks without purpose.`,
     }
 
     function renderChips() {
+      if (!categoryChips || !tagChips) return;
       categoryChips.innerHTML = "";
       categories.forEach((cat) => {
         const b = document.createElement("button");
@@ -1050,7 +1090,7 @@ Output: templates and concise examples; avoid buzzword stacks without purpose.`,
       try {
         await navigator.clipboard.writeText(text);
         showToast();
-      } catch {
+      } catch (_e) {
         const ta = document.createElement("textarea");
         ta.value = text;
         document.body.appendChild(ta);
@@ -1068,45 +1108,78 @@ Output: templates and concise examples; avoid buzzword stacks without purpose.`,
       toastTimer = setTimeout(() => toast.classList.remove("show"), 2000);
     }
 
-    dialogCopyAll.addEventListener("click", () => {
-      if (dialogAgent) copyText(buildCopyAllText(dialogAgent));
-    });
-    dialog.querySelector("[data-close]").addEventListener("click", () => dialog.close());
-    dialog.addEventListener("click", (e) => {
-      if (e.target === dialog) dialog.close();
-    });
+    /* Render data first so a failure in theme/storage/listeners still shows blueprints */
+    renderChips();
+    renderCards();
 
-    searchInput.addEventListener("input", () => {
-      searchQuery = normalize(searchInput.value.trim());
-      applyFilters();
-    });
+    if (dialogCopyAll) {
+      dialogCopyAll.addEventListener("click", () => {
+        if (dialogAgent) copyText(buildCopyAllText(dialogAgent));
+      });
+    }
+    if (dialog) {
+      const closeBtn = dialog.querySelector("[data-close]");
+      if (closeBtn) closeBtn.addEventListener("click", () => dialog.close());
+      dialog.addEventListener("click", (e) => {
+        if (e.target === dialog) dialog.close();
+      });
+    }
+
+    if (searchInput) {
+      searchInput.addEventListener("input", () => {
+        searchQuery = normalize(searchInput.value.trim());
+        applyFilters();
+      });
+    }
 
     const themeToggle = document.getElementById("theme-toggle");
     const themeIcon = document.getElementById("theme-icon");
 
     function getStoredTheme() {
-      return localStorage.getItem("theme");
+      try {
+        return localStorage.getItem("theme");
+      } catch (_e) {
+        return null;
+      }
     }
     function setTheme(theme) {
-      document.documentElement.setAttribute("data-theme", theme);
-      themeIcon.textContent = theme === "light" ? "◑" : "◐";
-      localStorage.setItem("theme", theme);
-    }
-    (function initTheme() {
-      const stored = getStoredTheme();
-      if (stored === "light" || stored === "dark") {
-        setTheme(stored);
-        return;
+      const t = theme === "light" ? "light" : "dark";
+      document.documentElement.setAttribute("data-theme", t);
+      document.documentElement.style.colorScheme = t === "light" ? "light" : "dark";
+      if (themeIcon) themeIcon.textContent = t === "light" ? "◑" : "◐";
+      try {
+        localStorage.setItem("theme", t);
+      } catch (_e) {
+        /* ignore private mode / blocked storage */
       }
-      setTheme(window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
-    })();
-    themeToggle.addEventListener("click", () => {
-      const cur = document.documentElement.getAttribute("data-theme") || "dark";
-      setTheme(cur === "dark" ? "light" : "dark");
-    });
+    }
 
-    renderChips();
-    renderCards();
+    function currentTheme() {
+      const a = document.documentElement.getAttribute("data-theme");
+      return a === "light" ? "light" : "dark";
+    }
+
+    (function initTheme() {
+      try {
+        const stored = getStoredTheme();
+        if (stored === "light" || stored === "dark") {
+          setTheme(stored);
+          return;
+        }
+        const prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+        setTheme(prefersLight ? "light" : "dark");
+      } catch (_err) {
+        setTheme("dark");
+      }
+    })();
+
+    function onThemeToggle() {
+      setTheme(currentTheme() === "light" ? "dark" : "light");
+    }
+
+    if (themeToggle) {
+      themeToggle.addEventListener("click", onThemeToggle);
+    }
   </script>
 </body>
 </html>
