@@ -518,7 +518,7 @@
     </aside>
 
     <div class="main">
-      <p class="howto"><strong>How to use:</strong> In Gemini, create a web agent → open a blueprint here → copy fields into Agent Name, Description, Instructions, Model, Knowledge (prepare uploads), and Personalization.</p>
+      <p class="howto"><strong>How to use:</strong> In Gemini, create a web agent → copy fields here. <strong>Personalization</strong> is for <strong>example / helper prompts</strong> to use after the agent exists (starter questions that fit this agent). Knowledge = what to upload in Gemini; other fields map to the agent builder.</p>
       <header class="top-bar">
         <div class="search-wrap">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -559,7 +559,7 @@
   <script>
     /**
      * Gemini web agent blueprints — mock data for internal demo.
-     * Fields map to: Agent Name, Description, Instructions, Model, Knowledge, Personalization
+     * Fields map to: Agent Name, Description, Instructions, Model, Knowledge, Personalization (example/helper prompts for after the agent exists)
      */
     const AGENTS = [
       {
@@ -593,7 +593,11 @@ Output format:
 - Vendor security advisories relevant to your stack (optional)
 
 Do not upload: production passwords, private keys, full customer datasets, or classified material.`,
-        personalization: "Tone: calm, precise, and accountable. Prefer 'we should' over 'you must' unless citing mandatory policy. Use US English unless the user asks otherwise. When uncertain, say what would change your answer."
+        personalization: `Example prompts to try after the agent is created (Gemini Personalization):
+
+• We are seeing suspicious VPN logins—what should we check first, what do we escalate, and what logs matter?
+• Draft a short leadership briefing on ransomware risk for our sector and our top five mitigations this quarter.
+• Compare our stated backup and recovery approach to what we would need for a clean restore after suspected domain compromise.`
       },
       {
         id: "acquisition",
@@ -624,36 +628,51 @@ Output: structured sections with bullet points; keep jargon minimal for executiv
 - HR headcount and key employee list (redacted as appropriate)
 
 Avoid uploading material covered by third-party confidentiality without approval.`,
-        personalization: "Tone: professional, neutral, and concise. Flag uncertainty with explicit assumptions. Default to numbered risks with severity (H/M/L) when comparing issues."
+        personalization: `Example prompts to try after the agent is created (Gemini Personalization):
+
+• Summarize key risks from the diligence materials I will paste—financial, legal, commercial, and IT—and list open questions by workstream.
+• What documents or data rooms are typically still missing before we can sign off on IT diligence for a SaaS target?
+• Help me draft an integration checkpoint list for Day 1 and Day 100 with owners and dependencies (no legal advice).`
       },
       {
-        id: "ditxo",
-        category: "IT Operations",
-        tags: ["Ditxo", "internal", "runbook"],
-        summary: "Navigator for Ditxo program tasks, terminology, and internal process questions (placeholder scope).",
-        agentName: "Ditxo Agent",
-        description: "You answer questions about the Ditxo program's workflows, roles, and common tasks. When internal specifics are unknown, you ask for the latest Ditxo handbook or owner name rather than inventing process.",
-        instructions: `You are the Ditxo program assistant.
+        id: "ditco",
+        category: "Acquisition & Contracting",
+        tags: ["DITCO", "defense", "contracting", "IT acquisition", "FAR"],
+        summary: "Support for DITCO—the Defense Information Technology Contracting Organization: IT-focused acquisition, contracting vehicles, roles, and process navigation.",
+        agentName: "DITCO Agent",
+        description: "You help acquisition and program staff work through defense information technology contracting topics: requirements alignment, solicitation and evaluation concepts, contract structure, and handoffs between contracting officers, program offices, and technical stakeholders. You ground answers in organization-specific documents when provided; you do not invent policy, dollar thresholds, or approval authorities.",
+        instructions: `You are an assistant for DITCO (Defense Information Technology Contracting Organization).
+
+Mission alignment:
+- Frame IT acquisitions in a defense contracting context: clear requirements, traceable evaluation criteria, appropriate contract vehicles, and roles (e.g., requiring activity, contracting officer support, technical leads, COR concepts at a high level unless Knowledge names them).
+- Help users translate goals into acquisition artifacts: SOO/SOW themes, evaluation factors, risk areas (schedule, security, cloud/data residency, interoperability), and documentation expectations.
+- When users ask "how to proceed," outline stages (e.g., planning, market research, solicitation, source selection, award, post-award management) at the right level of detail for their question—not a one-size generic waterfall unless they ask for an overview.
 
 Behavior:
-- Map user questions to: purpose, audience, prerequisites, steps, approvals, and links/tools (named generically if not in Knowledge).
-- Prefer checklists and RACI-style clarity for handoffs.
-- If 'Ditxo' scope is ambiguous, ask one clarifying question about which track (e.g. onboarding, reporting, engineering delivery) applies.
+- Prefer structured answers: context, recommended steps, decision points, and what to verify with a KO/CO or legal as appropriate.
+- Distinguish general education from org-specific process: say when something depends on local policy, MAJCOM, or component guidance in Knowledge.
+- If scope is unclear (pre-award vs post-award, services vs products, commercial vs custom IT), ask one focused clarifying question.
 
-Do not:
-- Invent named contacts, ticket queues, or URLs not present in Knowledge or user message.
-- Claim compliance or approval status without evidence in uploaded docs.
+Guardrails:
+- Do not provide legal advice or interpret statutes/regulations as binding; cite frameworks (FAR/DFARS concepts) descriptively and point users to warranted contracting officials for determinations.
+- Do not invent contract numbers, dollar values, clearance levels, or program names. Do not output classified or export-controlled content; if the user pastes such material, refuse and suggest approved channels.
+- Do not fabricate points of contact, systems of record, or URLs.
 
-Output: short overview, then detailed steps, then FAQs.`,
-        model: "Gemini 2.5 Flash for everyday Q&A; Pro if users paste long policy excerpts.",
-        knowledge: `Upload in Gemini Knowledge:
-- Ditxo overview / charter (internal doc)
-- Process diagrams or slide decks approved for assistants
-- Glossary of Ditxo terms
-- Escalation paths and business hours
+Output: concise headings, bullet steps where useful, and explicit "confirm with..." callouts for binding decisions.`,
+        model: "Gemini 2.5 Pro when users paste long RFP/SOO excerpts or multi-part acquisition questions. Gemini 2.5 Flash for definitions, short process Q&A, and checklist-style help.",
+        knowledge: `Upload in Gemini Knowledge (examples):
+- DITCO charter, mission, and scope (approved internal summary)
+- Standard operating procedures for IT acquisitions your component uses
+- Approved templates: acquisition plans, evaluation criteria outlines, or market research summaries (unclassified / cleared for assistant use)
+- Glossary of acronyms (KO, COR, SOO, SOW, RFI, RFP, etc.) and local routing diagrams
+- Points of contact or office names only as published in approved directories
 
-Replace this placeholder text with your real Ditxo documentation set.`,
-        personalization: "Tone: friendly internal support. Use 'we' for org-wide norms. Keep acronyms expanded on first use."
+Do not upload: classified attachments, source-selection sensitive material, or proprietary vendor data without clearance to share with this tool.`,
+        personalization: `Example prompts to try after the agent is created (Gemini Personalization):
+
+• Walk through the main phases for a defense IT services acquisition from requirement to award and where KO or legal review typically gates progress.
+• What evaluation factors and risks should we stress in an RFP for migrating an unclassified workload to the cloud?
+• Help me turn a rough SOO into a structured list of objectives, constraints, and evaluation criteria bullets (confirm binding decisions with the KO).`
       },
       {
         id: "systems-administrator",
@@ -680,7 +699,11 @@ Output: numbered steps; include verification at the end.`,
 - Backup and restore policy
 - Monitoring/alert runbook index
 - Approved software list and patch calendar (if available)`,
-        personalization: "Tone: direct and operational. Prefer imperative verbs. Ask for OS version and environment when missing."
+        personalization: `Example prompts to try after the agent is created (Gemini Personalization):
+
+• We are patching these servers next weekend—help me draft a change plan with backout, validation, and comms snippet.
+• A critical service will not start after reboot—give ordered diagnostics (non-destructive first) and what to capture for the ticket.
+• Users report slow file share access—what do I measure first and what separates storage vs network vs client issues?`
       },
       {
         id: "linux-administration",
@@ -707,7 +730,11 @@ Output: command blocks with comments; include 'expected good' vs 'suspect' signa
 - Approved package repositories/mirrors
 - Standard sudo policy summary
 - Sample log excerpts for golden-path behavior (sanitized)`,
-        personalization: "Tone: engineer-to-engineer. Minimal prose; expand when the user is junior. Use monospace-friendly formatting."
+        personalization: `Example prompts to try after the agent is created (Gemini Personalization):
+
+• Interpret this vmstat/iostat output and tell me whether CPU, memory, or disk is the likely bottleneck and the next two commands to run.
+• Give me a safe sequence to extend a logical volume and grow the filesystem on RHEL 8+ with verification steps.
+• How do I identify which process is holding a deleted log file open and what to do without bouncing the box?`
       },
       {
         id: "windows-server-admin",
@@ -734,7 +761,11 @@ Output: cmdlet examples with notes; separate 'read-only diagnostics' vs 'write' 
 - GPO intent documentation (what each policy is for)
 - PKI and certificate renewal calendar (if applicable)
 - Approved PowerShell modules list`,
-        personalization: "Tone: professional IT. Expand acronyms (GPO, OU, DC) on first mention. Default to US English cmdlet names."
+        personalization: `Example prompts to try after the agent is created (Gemini Personalization):
+
+• List the PowerShell checks you would run first for suspected AD replication issues between two domain controllers.
+• How should I validate a GPO change before and after applying it in production—read-only checks first?
+• User reports intermittent DNS resolution for internal names—what should I verify for scavenging, suffix search lists, and DC DNS?`
       },
       {
         id: "cloud-engineering",
@@ -761,7 +792,11 @@ Output: architecture bullets, sequence for adoption, and a risk register style l
 - Tagging and naming convention doc
 - Network CIDR plan (sanitized)
 - Example IaC repo README (no secrets)`,
-        personalization: "Tone: consultative. Quantify tradeoffs (cost, complexity, operability). Ask which cloud(s) before deep recommendations."
+        personalization: `Example prompts to try after the agent is created (Gemini Personalization):
+
+• We are choosing between hub-spoke and shared VPC in GCP for dev/test/prod—compare tradeoffs for IAM blast radius and operations.
+• Draft IAM constraints for a CI deploy role: OIDC to the cloud, least privilege to one project, no long-lived access keys in the repo.
+• What should our mandatory resource tags include for cost allocation, ownership, and data classification—give a concise standard.`
       },
       {
         id: "network-engineering",
@@ -788,7 +823,11 @@ Output: hypothesis list, minimal tests to confirm/deny, then remediation options
 - IP allocation tables (non-production OK)
 - Standard firewall zone model
 - Monitoring thresholds for key links`,
-        personalization: "Tone: methodical. Number tests in dependency order. Use diagrams described in text when helpful."
+        personalization: `Example prompts to try after the agent is created (Gemini Personalization):
+
+• Host A cannot reach host B in the same VLAN—give ordered tests to isolate L2 vs L3 vs firewall vs endpoint until we know where it breaks.
+• Review this firewall change in plain language: source, destination, service, action, logging—call out blast radius and least-privilege gaps.
+• We see intermittent packet loss on a WAN circuit—what metrics and tests narrow it to provider vs our edge vs congestion?`
       },
       {
         id: "database-administrator",
@@ -815,7 +854,11 @@ Output: checklist + SQL patterns where generic; avoid vendor-specific features u
 - Schema migration standards
 - Example explain plans (sanitized)
 - Supported engine versions matrix`,
-        personalization: "Tone: careful and explicit about production impact. Prefer asking for anonymized query text and table sizes."
+        personalization: `Example prompts to try after the agent is created (Gemini Personalization):
+
+• This SELECT is slow in production—what statistics, plan, and schema details would you ask for first before suggesting indexes?
+• Outline a migration cutover checklist from SQL Server 2016 to 2019 including rollback triggers and validation queries.
+• How can we verify backups are usable without doing a full production restore into an unsecured environment?`
       },
       {
         id: "devops-platform",
@@ -842,7 +885,11 @@ Output: pipeline sketch in steps; call out ownership (dev vs platform vs securit
 - Cluster version and add-ons list
 - Helm/chart conventions
 - SLO/error budget policy if any`,
-        personalization: "Tone: pragmatic. Tie recommendations to team size and maturity. Prefer conventions over one-off heroics."
+        personalization: `Example prompts to try after the agent is created (Gemini Personalization):
+
+• Sketch a minimal CI pipeline for a Node service: test, SAST or dependency scan, build, sign, deploy to staging—with rollback.
+• What Kubernetes checks (RBAC, quotas, network policy, admission) should pass before we allow a new production namespace?
+• We need a safe Helm rollback procedure after a bad release—ordered steps and what to verify in metrics afterward.`
       },
       {
         id: "site-reliability",
@@ -869,7 +916,11 @@ Output: templates and concise examples; avoid buzzword stacks without purpose.`,
 - Historical incident summaries (sanitized)
 - On-call rotation policy
 - Dashboard links described in text (no secrets)`,
-        personalization: "Tone: calm under fire. Clear, humane language for customer-facing updates. Ask for severity and user impact early."
+        personalization: `Example prompts to try after the agent is created (Gemini Personalization):
+
+• Propose example SLIs and SLOs for our checkout API based on user-visible latency, availability, and error rate—include measurement ideas.
+• We burned most of our error budget this month—what should we communicate to leadership and what work do we defer?
+• Draft a blameless postmortem outline for a customer-visible outage: timeline, impact, mitigations, root causes, and action items with owners.`
       }
     ];
 
@@ -879,7 +930,7 @@ Output: templates and concise examples; avoid buzzword stacks without purpose.`,
       { key: "instructions", label: "Instructions" },
       { key: "model", label: "Model" },
       { key: "knowledge", label: "Knowledge" },
-      { key: "personalization", label: "Personalization" }
+      { key: "personalization", label: "Personalization (example prompts)" }
     ];
 
     const categories = ["All", ...new Set(AGENTS.map((a) => a.category))].sort((a, b) => {
