@@ -125,8 +125,18 @@
       text-transform: uppercase;
       letter-spacing: 0.06em;
       color: var(--text-muted);
+      margin-bottom: 0.25rem;
+      padding-left: 0.5rem;
+    }
+    .filter-hint {
+      font-size: 0.68rem;
+      font-weight: 500;
+      text-transform: none;
+      letter-spacing: 0;
+      color: var(--text-muted);
       margin-bottom: 0.5rem;
       padding-left: 0.5rem;
+      line-height: 1.35;
     }
 
     .chip-row {
@@ -153,6 +163,13 @@
       border-color: var(--accent);
       color: var(--accent);
     }
+    .chip.chip-clear {
+      border-style: dashed;
+      opacity: 0.95;
+    }
+    .chip.chip-clear[aria-pressed="true"] {
+      border-style: solid;
+    }
 
     .sidebar-footer {
       margin-top: auto;
@@ -164,6 +181,24 @@
       padding-right: 0.5rem;
     }
     .sidebar-footer strong { color: var(--text); }
+    .sidebar-footer-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding-left: 0.5rem;
+      margin-bottom: 0.35rem;
+    }
+    .sidebar-bullets {
+      margin: 0;
+      padding: 0 0 0 1.15rem;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+    .sidebar-bullets li { margin-bottom: 0.4rem; }
+    .sidebar-bullets li:last-child { margin-bottom: 0; }
 
     .main {
       display: flex;
@@ -171,14 +206,30 @@
       min-width: 0;
     }
 
-    .howto {
-      padding: 0.65rem 1.5rem;
-      font-size: 0.8rem;
-      color: var(--text-muted);
+    .howto-panel {
+      margin: 0;
+      padding: 1rem 1.5rem 1.1rem;
       border-bottom: 1px solid var(--border);
-      background: var(--bg-elevated);
+      background: var(--accent-soft);
+      border-left: 4px solid var(--accent);
     }
-    .howto strong { color: var(--text); }
+    .howto-panel h2 {
+      margin: 0 0 0.6rem;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+    .howto-list {
+      margin: 0;
+      padding-left: 1.2rem;
+      font-size: 0.84rem;
+      color: var(--text-muted);
+      line-height: 1.55;
+    }
+    .howto-list li { margin-bottom: 0.45rem; }
+    .howto-list li:last-child { margin-bottom: 0; }
+    .howto-list strong { color: var(--text); }
 
     .top-bar {
       display: flex;
@@ -504,21 +555,37 @@
 
       <div class="filter-block">
         <label>Category</label>
-        <div class="chip-row" id="category-chips" role="group" aria-label="Filter by category"></div>
+        <p class="filter-hint" id="category-filter-hint">Multi-select (OR): blueprints in <strong>any</strong> chosen category. “All categories” resets.</p>
+        <div class="chip-row" id="category-chips" role="group" aria-labelledby="category-filter-hint"></div>
       </div>
 
       <div class="filter-block">
         <label>Tags</label>
-        <div class="chip-row" id="tag-chips" role="group" aria-label="Filter by tag"></div>
+        <p class="filter-hint" id="tag-filter-hint">Multi-select (OR): blueprints with <strong>any</strong> chosen tag. “All tags” resets.</p>
+        <div class="chip-row" id="tag-chips" role="group" aria-labelledby="tag-filter-hint"></div>
       </div>
 
       <div class="sidebar-footer">
-        <strong>Static demo:</strong> Copy each field into the Gemini agent builder. Upload files in Gemini’s <strong>Knowledge</strong> step—this site only provides guidance on what to upload.
+        <div class="sidebar-footer-title">Static demo</div>
+        <ul class="sidebar-bullets">
+          <li>Copy each field from a blueprint into the Gemini <strong>web agent builder</strong> (Name, Description, Instructions, Model, Knowledge, Personalization).</li>
+          <li><strong>Knowledge</strong> here is only <strong>guidance on what to upload</strong> in Gemini—upload the actual files in Gemini’s Knowledge step.</li>
+          <li><strong>Personalization</strong> holds <strong>example / helper prompts</strong> to try after the agent exists.</li>
+        </ul>
       </div>
     </aside>
 
     <div class="main">
-      <p class="howto"><strong>How to use:</strong> In Gemini, create a web agent → copy fields here. <strong>Personalization</strong> is for <strong>example / helper prompts</strong> to use after the agent exists (starter questions that fit this agent). Knowledge = what to upload in Gemini; other fields map to the agent builder.</p>
+      <section class="howto-panel" aria-labelledby="howto-heading">
+        <h2 id="howto-heading">How to use this site</h2>
+        <ul class="howto-list">
+          <li>In <strong>Gemini</strong>, start <strong>Create / web agent</strong> (or your org’s agent builder flow).</li>
+          <li>Open a blueprint below, then <strong>copy each field</strong> into the matching builder fields.</li>
+          <li><strong>Knowledge</strong> — use the text as a checklist of <strong>what to upload</strong> in Gemini’s Knowledge step (this site does not host files).</li>
+          <li><strong>Personalization</strong> — paste <strong>example / helper prompts</strong> so users get <strong>starter questions</strong> that fit this agent after it is created.</li>
+          <li>Other fields map directly to the agent builder (name, description, instructions, model).</li>
+        </ul>
+      </section>
       <header class="top-bar">
         <div class="search-wrap">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -933,16 +1000,12 @@ Output: templates and concise examples; avoid buzzword stacks without purpose.`,
       { key: "personalization", label: "Personalization (example prompts)" }
     ];
 
-    const categories = ["All", ...new Set(AGENTS.map((a) => a.category))].sort((a, b) => {
-      if (a === "All") return -1;
-      if (b === "All") return 1;
-      return a.localeCompare(b);
-    });
+    const categoryList = [...new Set(AGENTS.map((a) => a.category))].sort((a, b) => a.localeCompare(b));
     const allTags = [...new Set(AGENTS.flatMap((a) => a.tags))].sort((a, b) => a.localeCompare(b));
-    const tagChipLabels = [{ id: "__all", label: "All tags" }, ...allTags.map((t) => ({ id: t, label: t }))];
 
-    let activeCategory = "All";
-    let activeTagId = "__all";
+    /** Empty set = no filter (show all). Multiple selections use OR within each dimension. */
+    const activeCategories = new Set();
+    const activeTags = new Set();
     let searchQuery = "";
 
     const grid = document.getElementById("card-grid");
@@ -979,8 +1042,11 @@ Output: templates and concise examples; avoid buzzword stacks without purpose.`,
     }
 
     function matchesFilters(a) {
-      if (activeCategory !== "All" && a.category !== activeCategory) return false;
-      if (activeTagId !== "__all" && !a.tags.includes(activeTagId)) return false;
+      if (activeCategories.size > 0 && !activeCategories.has(a.category)) return false;
+      if (activeTags.size > 0) {
+        const tagOrMatch = [...activeTags].some((t) => a.tags.includes(t));
+        if (!tagOrMatch) return false;
+      }
       if (searchQuery && !searchHaystack(a).includes(searchQuery)) return false;
       return true;
     }
@@ -1091,29 +1157,53 @@ Output: templates and concise examples; avoid buzzword stacks without purpose.`,
     }
 
     function syncCategoryPressed() {
-      categoryChips.querySelectorAll(".chip").forEach((c) =>
-        c.setAttribute("aria-pressed", c.dataset.cat === activeCategory ? "true" : "false")
-      );
+      if (!categoryChips) return;
+      const clearBtn = categoryChips.querySelector('[data-action="clear-categories"]');
+      if (clearBtn) clearBtn.setAttribute("aria-pressed", activeCategories.size === 0 ? "true" : "false");
+      categoryChips.querySelectorAll(".chip[data-cat]").forEach((c) => {
+        const cat = c.dataset.cat;
+        c.setAttribute("aria-pressed", activeCategories.has(cat) ? "true" : "false");
+      });
     }
 
     function syncTagPressed() {
-      tagChips.querySelectorAll(".chip").forEach((c) =>
-        c.setAttribute("aria-pressed", c.dataset.tag === activeTagId ? "true" : "false")
-      );
+      if (!tagChips) return;
+      const clearBtn = tagChips.querySelector('[data-action="clear-tags"]');
+      if (clearBtn) clearBtn.setAttribute("aria-pressed", activeTags.size === 0 ? "true" : "false");
+      tagChips.querySelectorAll(".chip[data-tag]").forEach((c) => {
+        const t = c.dataset.tag;
+        c.setAttribute("aria-pressed", activeTags.has(t) ? "true" : "false");
+      });
     }
 
     function renderChips() {
       if (!categoryChips || !tagChips) return;
       categoryChips.innerHTML = "";
-      categories.forEach((cat) => {
+
+      const clearCat = document.createElement("button");
+      clearCat.type = "button";
+      clearCat.className = "chip chip-clear";
+      clearCat.dataset.action = "clear-categories";
+      clearCat.textContent = "All categories";
+      clearCat.title = "Clear category filter (show all categories)";
+      clearCat.setAttribute("aria-pressed", activeCategories.size === 0 ? "true" : "false");
+      clearCat.addEventListener("click", () => {
+        activeCategories.clear();
+        syncCategoryPressed();
+        applyFilters();
+      });
+      categoryChips.appendChild(clearCat);
+
+      categoryList.forEach((cat) => {
         const b = document.createElement("button");
         b.type = "button";
         b.className = "chip";
         b.dataset.cat = cat;
         b.textContent = cat;
-        b.setAttribute("aria-pressed", cat === activeCategory ? "true" : "false");
+        b.setAttribute("aria-pressed", activeCategories.has(cat) ? "true" : "false");
         b.addEventListener("click", () => {
-          activeCategory = cat;
+          if (activeCategories.has(cat)) activeCategories.delete(cat);
+          else activeCategories.add(cat);
           syncCategoryPressed();
           applyFilters();
         });
@@ -1121,15 +1211,31 @@ Output: templates and concise examples; avoid buzzword stacks without purpose.`,
       });
 
       tagChips.innerHTML = "";
-      tagChipLabels.forEach((t) => {
+
+      const clearTags = document.createElement("button");
+      clearTags.type = "button";
+      clearTags.className = "chip chip-clear";
+      clearTags.dataset.action = "clear-tags";
+      clearTags.textContent = "All tags";
+      clearTags.title = "Clear tag filter (show all tags)";
+      clearTags.setAttribute("aria-pressed", activeTags.size === 0 ? "true" : "false");
+      clearTags.addEventListener("click", () => {
+        activeTags.clear();
+        syncTagPressed();
+        applyFilters();
+      });
+      tagChips.appendChild(clearTags);
+
+      allTags.forEach((tag) => {
         const b = document.createElement("button");
         b.type = "button";
         b.className = "chip";
-        b.dataset.tag = t.id;
-        b.textContent = t.label;
-        b.setAttribute("aria-pressed", t.id === activeTagId ? "true" : "false");
+        b.dataset.tag = tag;
+        b.textContent = tag;
+        b.setAttribute("aria-pressed", activeTags.has(tag) ? "true" : "false");
         b.addEventListener("click", () => {
-          activeTagId = t.id;
+          if (activeTags.has(tag)) activeTags.delete(tag);
+          else activeTags.add(tag);
           syncTagPressed();
           applyFilters();
         });
