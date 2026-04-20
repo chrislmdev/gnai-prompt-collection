@@ -522,6 +522,50 @@
       overflow: auto;
     }
 
+    .subagents-details {
+      margin-top: 0.25rem;
+      margin-bottom: 1rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg);
+      overflow: hidden;
+    }
+    .subagents-details > summary {
+      list-style: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      padding: 0.5rem 0.75rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-elevated);
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+    }
+    .subagents-details > summary::-webkit-details-marker { display: none; }
+    .subagents-details[open] > summary { border-bottom: 1px solid var(--border); }
+    .subagents-details .subagents-inner {
+      padding: 0.75rem 0.75rem 0.25rem;
+      border-left: 3px solid var(--accent-soft);
+      margin-left: 0.35rem;
+    }
+    .subagent-group {
+      margin-bottom: 1rem;
+    }
+    .subagent-group:last-child { margin-bottom: 0.35rem; }
+    .subagent-group-title {
+      margin: 0 0 0.5rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+    .subagent-group .field-block { margin-left: 0.15rem; }
+
     .modal-actions {
       display: flex;
       justify-content: flex-end;
@@ -626,7 +670,8 @@
   <script>
     /**
      * Gemini web agent blueprints — mock data for internal demo.
-     * Fields map to: Agent Name, Description, Instructions, Model, Knowledge, Personalization (example/helper prompts for after the agent exists)
+     * Fields map to: Agent Name, Description, Instructions, Model, Knowledge, Personalization (example/helper prompts for after the agent exists).
+     * Optional subAgents: companion blueprints, each with name, description, instructions, model (shown in the detail modal under a collapsed section).
      */
     const AGENTS = [
       {
@@ -664,7 +709,29 @@ Do not upload: production passwords, private keys, full customer datasets, or cl
 
 • We are seeing suspicious VPN logins—what should we check first, what do we escalate, and what logs matter?
 • Draft a short leadership briefing on ransomware risk for our sector and our top five mitigations this quarter.
-• Compare our stated backup and recovery approach to what we would need for a clean restore after suspected domain compromise.`
+• Compare our stated backup and recovery approach to what we would need for a clean restore after suspected domain compromise.`,
+        subAgents: [
+          {
+            name: "Incident Triage Sub-agent",
+            description: "You narrow noisy alerts into a short, prioritized triage brief for analysts. You assume the parent security agent already framed policy and escalation paths.",
+            instructions: `You receive: alert type, source system, timestamps, affected accounts or hosts, and any user-stated urgency.
+
+Behavior:
+- Output: severity guess (low/med/high), top 3 hypotheses, minimum evidence to collect next, and one recommended immediate action.
+- Never claim attribution to a specific threat actor without cited intel from the user.
+- If inputs are insufficient, list exactly what is missing in bullet form.`,
+            model: "Gemini 2.5 Flash for fast triage; escalate to Pro in the parent agent for deep incident narrative."
+          },
+          {
+            name: "Control Mapping Sub-agent",
+            description: "You map described technical controls to high-level framework families (NIST CSF, ISO 27001 themes) without asserting certification status.",
+            instructions: `Given a control description or architecture snippet:
+- List likely CSF functions (Identify, Protect, Detect, Respond, Recover) with one-line rationale each.
+- Flag gaps or weak coverage (e.g., logging without retention, MFA exceptions).
+- Do not invent audit results; phrase as questions for assessors.`,
+            model: "Gemini 2.5 Pro for multi-control mappings; Flash for single-control lookups."
+          }
+        ]
       },
       {
         id: "acquisition",
@@ -1000,6 +1067,13 @@ Output: templates and concise examples; avoid buzzword stacks without purpose.`,
       { key: "personalization", label: "Personalization (example prompts)" }
     ];
 
+    const SUB_AGENT_FIELD_DEFS = [
+      { key: "name", label: "Name" },
+      { key: "description", label: "Description" },
+      { key: "instructions", label: "Instructions" },
+      { key: "model", label: "Model" }
+    ];
+
     const categoryList = [...new Set(AGENTS.map((a) => a.category))].sort((a, b) => a.localeCompare(b));
     const allTags = [...new Set(AGENTS.flatMap((a) => a.tags))].sort((a, b) => a.localeCompare(b));
 
@@ -1026,6 +1100,16 @@ Output: templates and concise examples; avoid buzzword stacks without purpose.`,
     }
 
     function searchHaystack(a) {
+      const subSlice =
+        Array.isArray(a.subAgents) && a.subAgents.length
+          ? a.subAgents
+              .map((s) =>
+                [s.name, s.description, s.instructions, s.model]
+                  .map((x) => String(x || ""))
+                  .join(" ")
+              )
+              .join(" ")
+          : "";
       return normalize(
         [
           a.summary,
@@ -1036,7 +1120,8 @@ Output: templates and concise examples; avoid buzzword stacks without purpose.`,
           a.knowledge,
           a.personalization,
           a.category,
-          a.tags.join(" ")
+          a.tags.join(" "),
+          subSlice
         ].join(" ")
       );
     }
@@ -1055,6 +1140,14 @@ Output: templates and concise examples; avoid buzzword stacks without purpose.`,
       const lines = [];
       for (const f of FIELD_DEFS) {
         lines.push(`## ${f.label}`, "", String(a[f.key] || "").trim(), "");
+      }
+      if (Array.isArray(a.subAgents) && a.subAgents.length) {
+        for (const sub of a.subAgents) {
+          lines.push(`## Sub-agent: ${String(sub.name || "").trim()}`, "");
+          for (const f of SUB_AGENT_FIELD_DEFS) {
+            lines.push(`### ${f.label}`, "", String(sub[f.key] || "").trim(), "");
+          }
+        }
       }
       return lines.join("\n").trim();
     }
@@ -1080,6 +1173,50 @@ Output: templates and concise examples; avoid buzzword stacks without purpose.`,
           if (dialogAgent && key in dialogAgent) copyText(String(dialogAgent[key]));
         });
       });
+
+      if (Array.isArray(a.subAgents) && a.subAgents.length) {
+        const det = document.createElement("details");
+        det.className = "subagents-details";
+        const sum = document.createElement("summary");
+        sum.textContent = `Sub-agents (${a.subAgents.length})`;
+        det.appendChild(sum);
+        const inner = document.createElement("div");
+        inner.className = "subagents-inner";
+        det.appendChild(inner);
+
+        a.subAgents.forEach((sub, idx) => {
+          const group = document.createElement("div");
+          group.className = "subagent-group";
+          const h = document.createElement("h4");
+          h.className = "subagent-group-title";
+          h.textContent = String(sub.name || `Sub-agent ${idx + 1}`).trim();
+          group.appendChild(h);
+          for (const f of SUB_AGENT_FIELD_DEFS) {
+            const block = document.createElement("div");
+            block.className = "field-block";
+            const val = String(sub[f.key] || "");
+            block.innerHTML = `
+              <div class="field-head">
+                <span>${escapeHtml(f.label)}</span>
+                <button type="button" class="btn btn-ghost btn-sm" data-sub-copy data-sub-idx="${idx}" data-sub-field="${escapeAttr(f.key)}">Copy</button>
+              </div>
+              <pre class="field-body" id="field-${escapeAttr(a.id)}-sub-${idx}-${escapeAttr(f.key)}">${escapeHtml(val)}</pre>
+            `;
+            group.appendChild(block);
+          }
+          inner.appendChild(group);
+        });
+        dialogFields.appendChild(det);
+
+        dialogFields.querySelectorAll("[data-sub-copy]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const idx = parseInt(btn.getAttribute("data-sub-idx"), 10);
+            const field = btn.getAttribute("data-sub-field");
+            const sub = dialogAgent && Array.isArray(dialogAgent.subAgents) ? dialogAgent.subAgents[idx] : null;
+            if (sub && field && field in sub) copyText(String(sub[field] || ""));
+          });
+        });
+      }
     }
 
     function openDialog(a) {
