@@ -11,10 +11,10 @@ Open `index.html` in a browser (or serve the folder). Each card is a blueprint w
 Metadata includes:
 
 - **Custom objects:** `Agent_Blueprint__c`, `Agent_Sub_Agent__c` (master-detail on blueprint; SOQL child relationship `Sub_Agents__r`)
-- **Lightning app:** `Ai_Agent_Blueprints` with tab **Gnai Blueprints** (Visualforce page `AgentBlueprints`), standard Home, and object tabs for maintenance
-- **Visualforce:** `AgentBlueprints.page` — same gallery UX as `index.html`; data from `AgentBlueprintController.getBlueprints`; admin bar for **Seed (if empty)** / **Replace from seed** and **New blueprint** via JavaScript remoting (`AgentBlueprintPageController`)
-- **Static resources:** `GnaiAgentBlueprintsStyles` (CSS), `GnaiAgentBlueprintsApp` (JS), `AgentBlueprintsSeed` (seed JSON). After changing `index.html`, run `node scripts/build-vf-assets.mjs` to refresh the CSS/JS resources before deploy.
-- **Apex:** `AgentBlueprintController`, `AgentBlueprintSeeder`, `AgentBlueprintPageController`, tests in `AgentBlueprintControllerTest` and `AgentBlueprintPageControllerTest`
+- **Lightning app:** `Ai_Agent_Blueprints` with tab **Blueprint Gallery** (LWC `gnaiBlueprintGallery`), standard Home, and object tabs for maintenance
+- **LWC:** `gnaiBlueprintGallery` — search, category filter, include-drafts toggle, card grid, detail modal with copy actions, **New blueprint** (JSON payload, saves as **Draft** unless `status` is set), **Seed (if empty)** / **Replace from seed** (loads `AgentBlueprintsSeed` static resource via `AgentBlueprintSeeder`)
+- **Static resource:** `AgentBlueprintsSeed` (seed JSON for the seeder)
+- **Apex:** `AgentBlueprintController`, `AgentBlueprintSeeder`, tests in `AgentBlueprintControllerTest`
 - **Permission set:** `Ai_Agent_Blueprint_User` (assign to users who should use the app)
 
 ### Deploy
@@ -23,9 +23,7 @@ Metadata includes:
 sf project deploy start --source-dir force-app --wait 15
 ```
 
-Then in Setup: assign **Ai Agent Blueprint User** to your user, open the **Ai Agent Blueprints** app, open **Gnai Blueprints**, and click **Seed (if empty)** to load all blueprints from the bundled JSON. You can also open `/apex/AgentBlueprints` directly if the tab is on a different app.
-
-The page loads **Google Fonts** (DM Sans, JetBrains Mono). If your org’s CSP blocks them, fonts fall back to system faces; you can later bundle fonts in a zip static resource if you need strict parity with `index.html`.
+Then in Setup: assign **Ai Agent Blueprint User** to your user, open the **Ai Agent Blueprints** app, go to **Blueprint Gallery**, and click **Seed (if empty)** to load all blueprints from the bundled JSON.
 
 ### Refresh seed JSON from `index.html`
 
@@ -35,15 +33,9 @@ After editing the `AGENTS` array in `index.html`, regenerate the static resource
 node scripts/extract-agents.mjs
 ```
 
-Commit `force-app/main/default/staticresources/AgentBlueprintsSeed.json`, then redeploy (or use **Replace from seed** on the Visualforce page, which deletes existing blueprint and sub-agent rows first).
+Commit `force-app/main/default/staticresources/AgentBlueprintsSeed.json`, then redeploy (or use **Replace from seed** in the gallery, which deletes existing blueprint and sub-agent rows first).
 
-To sync the **hosted gallery** markup and behavior with edits to `index.html`, run:
-
-```bash
-node scripts/build-vf-assets.mjs
-```
-
-Then commit the updated `GnaiAgentBlueprintsStyles` / `GnaiAgentBlueprintsApp` static resources and redeploy. The repo root `index.html` remains a convenient **offline reference** for the same UI.
+The repo root `index.html` stays useful as an **offline** gallery and as the source for `extract-agents.mjs`.
 
 ## Project layout
 
@@ -52,5 +44,4 @@ Then commit the updated `GnaiAgentBlueprintsStyles` / `GnaiAgentBlueprintsApp` s
 | `index.html` | Self-contained static UI and `AGENTS` data |
 | `sfdx-project.json` | Salesforce DX project config |
 | `scripts/extract-agents.mjs` | Builds `AgentBlueprintsSeed.json` from `index.html` |
-| `scripts/build-vf-assets.mjs` | Extracts CSS/JS from `index.html` into VF static resources |
-| `force-app/main/default/` | Objects, tabs, app, Apex, VF page, permission set, static resources |
+| `force-app/main/default/` | Objects, tabs, app, Apex, LWC, permission set, static resources |

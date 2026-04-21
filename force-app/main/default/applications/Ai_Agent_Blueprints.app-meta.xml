@@ -11,7 +11,7 @@
     <isNavTabPersistenceDisabled>false</isNavTabPersistenceDisabled>
     <label>Ai Agent Blueprints</label>
     <navType>Standard</navType>
-    <tabs>Gnai_Blueprints</tabs>
+    <tabs>Blueprint_Gallery</tabs>
     <tabs>standard-home</tabs>
     <tabs>Agent_Blueprint__c</tabs>
     <tabs>Agent_Sub_Agent__c</tabs>

@@ -1,0 +1,216 @@
+<template>
+    <lightning-card title="Agent blueprint gallery" icon-name="custom:custom83">
+        <div class="slds-p-around_small">
+            <div class="toolbar slds-grid slds-wrap slds-gutters_xx-small">
+                <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                    <lightning-input
+                        label="Search"
+                        type="search"
+                        value={searchKey}
+                        onchange={handleSearchChange}
+                    ></lightning-input>
+                </div>
+                <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                    <lightning-combobox
+                        label="Category"
+                        value={categoryFilter}
+                        options={categoryOptions}
+                        onchange={handleCategoryChange}
+                    ></lightning-combobox>
+                </div>
+                <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                    <lightning-input
+                        type="toggle"
+                        label="Include drafts"
+                        checked={includeDrafts}
+                        onchange={handleDraftToggle}
+                        message-toggle-active="On"
+                        message-toggle-inactive="Off"
+                    ></lightning-input>
+                </div>
+            </div>
+            <div class="slds-m-top_small slds-grid slds-wrap slds-gutters_xx-small">
+                <lightning-button label="Seed (if empty)" onclick={handleSeed}></lightning-button>
+                <lightning-button
+                    label="Replace from seed"
+                    variant="destructive"
+                    onclick={handleReplaceSeed}
+                ></lightning-button>
+                <lightning-button label="New blueprint" onclick={openNewModal}></lightning-button>
+                <lightning-button label="Refresh" onclick={refresh}></lightning-button>
+            </div>
+
+            <template if:true={loading}>
+                <div class="slds-is-relative slds-m-top_medium" style="min-height: 6rem">
+                    <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
+                </div>
+            </template>
+
+            <template if:true={error}>
+                <div class="slds-text-color_error slds-m-top_small">{error}</div>
+            </template>
+
+            <div class="slds-m-top_medium slds-grid slds-wrap slds-gutters">
+                <template for:each={filteredBlueprints} for:item="bp">
+                    <div
+                        key={bp.recordId}
+                        class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-3"
+                    >
+                        <section
+                            class="card slds-box slds-theme_default slds-m-bottom_small"
+                            data-record-id={bp.recordId}
+                            onclick={handleOpenCard}
+                        >
+                            <h2 class="slds-text-heading_small">{bp.agentName}</h2>
+                            <p class="slds-text-body_small slds-text-color_weak">{bp.category}</p>
+                            <p class="slds-truncate">{bp.summary}</p>
+                            <div class="slds-m-top_xx-small">
+                                <template for:each={bp.tagRows} for:item="tr">
+                                    <lightning-badge
+                                        key={tr.key}
+                                        label={tr.label}
+                                        class="slds-m-right_xx-small"
+                                    ></lightning-badge>
+                                </template>
+                            </div>
+                            <div class="slds-m-top_x-small">
+                                <lightning-badge label={bp.status}></lightning-badge>
+                            </div>
+                        </section>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </lightning-card>
+
+    <template if:true={detailOpen}>
+        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_large">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <lightning-button-icon
+                        icon-name="utility:close"
+                        alternative-text="Close"
+                        variant="bare-inverse"
+                        class="slds-modal__close"
+                        onclick={closeDetail}
+                    ></lightning-button-icon>
+                    <h2 class="slds-modal__title slds-hyphenate">{selected.agentName}</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium">
+                    <div class="slds-m-bottom_small">
+                        <lightning-button label="Copy full JSON" onclick={copyExport}></lightning-button>
+                    </div>
+                    <dl class="slds-dl_horizontal slds-wrap">
+                        <dt class="slds-dl_horizontal__label slds-text-title_caps">Slug</dt>
+                        <dd class="slds-dl_horizontal__detail slds-grid">
+                            <span class="slds-col">{selected.externalId}</span>
+                            <lightning-button-icon
+                                icon-name="utility:copy"
+                                alternative-text="Copy slug"
+                                data-value={selected.externalId}
+                                onclick={copyField}
+                                class="slds-col_bump-left"
+                            ></lightning-button-icon>
+                        </dd>
+                        <dt class="slds-dl_horizontal__label slds-text-title_caps">Summary</dt>
+                        <dd class="slds-dl_horizontal__detail">
+                            <p class="pre">{selected.summary}</p>
+                        </dd>
+                        <dt class="slds-dl_horizontal__label slds-text-title_caps">Description</dt>
+                        <dd class="slds-dl_horizontal__detail">
+                            <p class="pre">{selected.description}</p>
+                            <lightning-button
+                                label="Copy"
+                                data-value={selected.description}
+                                onclick={copyField}
+                            ></lightning-button>
+                        </dd>
+                        <dt class="slds-dl_horizontal__label slds-text-title_caps">Instructions</dt>
+                        <dd class="slds-dl_horizontal__detail">
+                            <p class="pre">{selected.instructions}</p>
+                            <lightning-button
+                                label="Copy"
+                                data-value={selected.instructions}
+                                onclick={copyField}
+                            ></lightning-button>
+                        </dd>
+                        <dt class="slds-dl_horizontal__label slds-text-title_caps">Model</dt>
+                        <dd class="slds-dl_horizontal__detail">
+                            <span>{selected.model}</span>
+                            <lightning-button
+                                label="Copy"
+                                data-value={selected.model}
+                                onclick={copyField}
+                                class="slds-m-left_small"
+                            ></lightning-button>
+                        </dd>
+                        <dt class="slds-dl_horizontal__label slds-text-title_caps">Knowledge</dt>
+                        <dd class="slds-dl_horizontal__detail">
+                            <p class="pre">{selected.knowledge}</p>
+                            <lightning-button
+                                label="Copy"
+                                data-value={selected.knowledge}
+                                onclick={copyField}
+                            ></lightning-button>
+                        </dd>
+                        <dt class="slds-dl_horizontal__label slds-text-title_caps">Personalization</dt>
+                        <dd class="slds-dl_horizontal__detail">
+                            <p class="pre">{selected.personalization}</p>
+                            <lightning-button
+                                label="Copy"
+                                data-value={selected.personalization}
+                                onclick={copyField}
+                            ></lightning-button>
+                        </dd>
+                    </dl>
+
+                    <template if:true={hasSelectedSubAgents}>
+                        <h3 class="slds-text-heading_small slds-m-top_medium slds-m-bottom_x-small">Sub-agents</h3>
+                        <template for:each={selected.subRows} for:item="sub">
+                            <article key={sub.rowKey} class="slds-box slds-m-bottom_small">
+                                <h4 class="slds-text-title_bold">{sub.name}</h4>
+                                <p class="pre slds-text-body_small">{sub.description}</p>
+                                <p class="pre slds-m-top_x-small">{sub.instructions}</p>
+                                <p class="slds-text-body_small slds-m-top_x-small">Model: {sub.model}</p>
+                            </article>
+                        </template>
+                    </template>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning-button label="Close" onclick={closeDetail}></lightning-button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+
+    <template if:true={newOpen}>
+        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_large">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <lightning-button-icon
+                        icon-name="utility:close"
+                        alternative-text="Close"
+                        variant="bare-inverse"
+                        class="slds-modal__close"
+                        onclick={closeNew}
+                    ></lightning-button-icon>
+                    <h2 class="slds-modal__title">New blueprint (JSON)</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium">
+                    <lightning-textarea
+                        label="Payload"
+                        value={newJson}
+                        onchange={handleNewJsonChange}
+                        rows="16"
+                    ></lightning-textarea>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning-button label="Cancel" onclick={closeNew}></lightning-button>
+                    <lightning-button variant="brand" label="Create" onclick={handleCreate}></lightning-button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+</template>

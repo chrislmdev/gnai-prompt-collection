@@ -1,0 +1,13 @@
+.card {
+    cursor: pointer;
+    min-height: 7rem;
+}
+
+.pre {
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.toolbar lightning-input[type="toggle"] {
+    margin-top: 1.5rem;
+}
